@@ -1,189 +1,149 @@
 from aiogram import Router, types, F
-from aiogram.filters import CommandStart, Command, or_f
+from aiogram.filters import CommandStart, Command, or_f, StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 
-from keyboards.main_menu import main_menu_kbd
-from keyboards.hotel_services import hotel_services_list_kbd, back_to_menu_kbd
-from keyboards.restoraunt_menu import back_to_nonealcho_kbd, back_to_alcho_list, kitchen_menu_kbd, bar_menu_kbd, restoraunt_menu_kbd, back_to_kitchen_menu_kbd, bar_alcho_kbd, nonealcho_kbd
-from keyboards.attractions import attractions_kbd
+from keyboards.kbd import setup_kbd
 
 upr = Router()
 
 
-@upr.message(CommandStart())
-async def start_cdm(message: types.Message):
-    await message.answer(text="some text here", reply_markup=main_menu_kbd)
+class MainMenu(StatesGroup):
+    main_menu = State()
+    hotel_services = State()
+    restoraunt = State()
 
-@upr.message(F.text == "Назад в меню")
-async def hotel_services(message: types.Message):
-    await message.answer(text="some text here", reply_markup=main_menu_kbd)
+class Hotel(StatesGroup):
+    transfer = State()
+    sauna = State()
+    laundry = State()
 
-
-# hotel_services
-
-@upr.message(or_f(Command("services"), (F.text == "Услуги отеля")))
-async def hotel_services(message: types.Message):
-    await message.answer(text="Вот список услуг отеля", reply_markup=hotel_services_list_kbd)
-
-@upr.message(F.text == "Трансфер")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Тут что-то про трасфер", reply_markup=back_to_menu_kbd)
-
-@upr.message(F.text == "Сауна")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Тут что-то про сауну", reply_markup=back_to_menu_kbd)
-
-@upr.message(F.text == "Прачечная")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Тут что-то про прачечную", reply_markup=back_to_menu_kbd)
-
-@upr.message(F.text == "Назад к списку")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Вот список услуг отеля", reply_markup=hotel_services_list_kbd)
+class RestorauntMenu(StatesGroup):
+    kitchen = State()
+    bar = State()
 
 
-# restoraunt menu
+class BarMenu(StatesGroup):
+    alcohol = State()
+    alcoholfree = State()
 
-@upr.message(or_f(Command("menu"), (F.text == "Заказ еды в номер")))
-async def hotel_services(message: types.Message):
-    await message.answer(text="выберите", reply_markup=restoraunt_menu_kbd)
+class Alcohol(StatesGroup):
+    vodka = State()
+    whiskey = State()
+    rum = State()
+    cognac = State()
+    gin = State()
+    tequila = State()
+    liquor = State()
+    vermouth = State()
+    cocktails = State()
+    beer = State()
+    wines = State()
+    tinctures = State()
 
-@upr.message(F.text == "Меню бара")
-async def hotel_services(message: types.Message):
-    await message.answer(text="выберите", reply_markup=bar_menu_kbd)
 
-@upr.message(F.text == "Назад")
-async def hotel_services(message: types.Message):
-    await message.answer(text="выберите", reply_markup=restoraunt_menu_kbd)
 
-# kitchen menu
-@upr.message(F.text == "Меню кухни")
-async def hotel_services(message: types.Message):
-    await message.answer(text="выберите", reply_markup=kitchen_menu_kbd)
 
-@upr.message(F.text == "Салаты")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
+@upr.message(CommandStart(), StateFilter(None))
+async def for_start(message: types.Message, state: FSMContext):
+    await message.answer(text="Привет, что интересует?", reply_markup=setup_kbd(
+        "Услуги отеля", "Ресторан", placeholder="Что интересует?" 
+    ))
+    await state.set_state(MainMenu.main_menu)
 
-@upr.message(F.text == "Супы")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
+@upr.message(MainMenu.main_menu, F.text == "Услуги отеля")
+async def hotel_services(message: types.Message, state: FSMContext):
+    await message.answer(text="Выберите услугу", reply_markup=setup_kbd(
+        "Трансфер", "Сауна", "Прачечная", "Назад", placeholder="Куда двигаемся?", sizes=(2,1)
+    ))
+    await state.set_state(MainMenu.hotel_services)
 
-@upr.message(F.text == "Паста")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
 
-@upr.message(F.text == "Пицца")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
+@upr.message(StateFilter(MainMenu.hotel_services), F.text.in_(["Трансфер", "Сауна", "Прачечная"]))
+async def hotel_services_list(message: types.Message, state:FSMContext):
+    if message.text == "Трансфер":
+        await message.answer(text="Подадим черную жемчужину!", reply_markup=setup_kbd(
+            "Назад"
+        ))
+        await state.set_state(Hotel.transfer)
+    if message.text == "Сауна":
+        await message.answer(text="Уже топим печь?", reply_markup=setup_kbd(
+            "Назад"
+        ))
+        await state.set_state(Hotel.sauna)
+    if message.text == "Прачечная":
+        await message.answer(text="Отстираем, отгладим!", reply_markup=setup_kbd(
+            "Назад"
+        ))
+        await state.set_state(Hotel.laundry)
 
-@upr.message(F.text == "Холодные закуски")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
 
-@upr.message(F.text == "Горячие блюда")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
+@upr.message(MainMenu.main_menu, F.text == "Ресторан")
+async def restoraunt_menu(message: types.Message, state: FSMContext):
+    await message.answer(text="Поесть или выпить? А может и первое, и второе?", reply_markup=setup_kbd(
+        "Меню кухни", "Меню бара", "Назад", placeholder="Куда двигаемся?", sizes=(2,1)
+    ))
+    await state.set_state(MainMenu.restoraunt)
 
-@upr.message(F.text == "Гарниры")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
+@upr.message(StateFilter(MainMenu.restoraunt), F.text.in_(["Меню бара", "Меню кухни"]))
+async def restoraunt_menu_list(message: types.Message, state: FSMContext):
+    if message.text == "Меню бара":
+        await message.answer("Выберите категорию напитков", reply_markup=setup_kbd(
+            "Алкоголь", "Безалкогольные напитки", "Назад", placeholder="Выберите категорию", sizes=(2, 1)
+        ))
+        await state.set_state(RestorauntMenu.bar)
+    if message.text == "Меню кухни":
+        await message.answer("Выберите категорию блюд", reply_markup=setup_kbd(
+            "Салаты", "Супы", "Паста", "К пиву", "Холодные закуски", "Горячие блюда", "Пицца",
+            "Гарниры", "Десерты", "Соусы", "Назад", placeholder="Выберите категорию", sizes=(4, 3, 3, 1)
+        ))
+        await state.set_state(RestorauntMenu.kitchen)
 
-@upr.message(F.text == "\"К пиву\"")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
+@upr.message(StateFilter(RestorauntMenu.bar), F.text.in_(["Алкоголь", "Безалкогольные напитки"]))
+async def bar_menu(message: types.Message, state: FSMContext):
+    if message.text == "Алкоголь":
+        await message.answer(text="Вот категории напитков:", reply_markup=setup_kbd(
+            "Водка", "Виски", "Ром", "Коньяк", "Джин", "Текила", "Ликёры", "Коктейли",
+            "Вермут", "Пиво", "Найстойки", "Вина", "Назад", placeholder="Что заинтересовало?", sizes=(4, 4, 4, 1)
+        ))
+        await state.set_state(BarMenu.alcohol)
+    if message.text == "Безалкогольные напитки":
+        await message.answer(text="Вот категории напитков:", reply_markup=setup_kbd(
+            "Чай", "Кофе", "Соки", "Б/А Пиво", "Газировка", "Назад", placeholder="Что заинтересовало?", sizes=(3, 2, 1)
+        ))
+        await state.set_state(BarMenu.alcoholfree)
 
-@upr.message(F.text == "Десерты")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
 
-@upr.message(F.text == "Соусы")
-async def hotel_services(message: types.Message):
-    await message.answer(text="Информация", reply_markup=back_to_kitchen_menu_kbd)
 
-@upr.message(F.text == "Назад к меню кухни")
-async def back_to_kitchen_menu(message: types.Message):
-    await message.answer(text="выберите", reply_markup=kitchen_menu_kbd)
 
-# bar menu
-@upr.message(F.text == "Алкоголь и коктейли")
-async def alcho(message: types.Message):
-    await message.answer(text="Вот список категорий", reply_markup=bar_alcho_kbd)
 
-@upr.message(F.text == "Вернуться")
-async def bar_categories(message: types.Message):
-    await message.answer(text="Выберите", reply_markup=bar_menu_kbd)
 
-@upr.message(F.text == "Водка")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
+@upr.message(StateFilter("*"), F.text == "Назад")
+async def back(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
 
-@upr.message(F.text == "Виски")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Ром")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Текила")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Джин")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Коньяк")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Вина")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Пиво")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Настойки")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Вермуты")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Коктейли")
-async def alcho(message: types.Message):
-    await message.answer(text="text", reply_markup=back_to_alcho_list)
-
-@upr.message(F.text == "Вернуться к списку")
-async def alcho(message: types.Message):
-    await message.answer(text="some text", reply_markup=bar_alcho_kbd)
-
-@upr.message(F.text == "Безалкогольные напитки")
-async def alcho(message: types.Message):
-    await message.answer(text="some text", reply_markup=nonealcho_kbd)
-
-@upr.message(F.text == "Вернуться назад")
-async def alcho(message: types.Message):
-    await message.answer(text="some text", reply_markup=nonealcho_kbd)
-
-@upr.message(F.text == "Соки")
-async def bar(message: types.Message):
-    await message.answer(text="Список соков", reply_markup=back_to_nonealcho_kbd)
+    if current_state == MainMenu.hotel_services or current_state == MainMenu.restoraunt:
+        await message.answer(text="Что интересует?", reply_markup=setup_kbd(
+        "Услуги отеля", "Ресторан", placeholder="Что интересует?"
+        ))
+        await state.set_state(MainMenu.main_menu)
+   
+    if current_state in Hotel:
+        await message.answer(text="Выберите услугу", reply_markup=setup_kbd(
+        "Трансфер", "Сауна", "Прачечная", "Назад", placeholder="Куда двигаемся?", sizes=(2,1)
+        ))
+        await state.set_state(MainMenu.hotel_services)
     
-@upr.message(F.text == "Газировки")
-async def bar(message: types.Message):
-    await message.answer(text="Список газировки", reply_markup=back_to_nonealcho_kbd)
+    if current_state in RestorauntMenu:
+        await message.answer(text="Поесть или выпить? А может и первое, и второе?", reply_markup=setup_kbd(
+        "Меню кухни", "Меню бара", "Назад", placeholder="Куда двигаемся?", sizes=(2,1)
+        ))
+        await state.set_state(MainMenu.restoraunt)
+    
+    if current_state in BarMenu:
+        await message.answer("Выберите категорию напитков", reply_markup=setup_kbd(
+            "Алкоголь", "Безалкогольные напитки", "Назад", placeholder="Выберите категорию", sizes=(2, 1)
+        ))
+        await state.set_state(RestorauntMenu.bar)
 
-@upr.message(F.text == "Вода")
-async def bar(message: types.Message):
-    await message.answer(text="Список воды", reply_markup=back_to_nonealcho_kbd)
-
-
-# attractions
-
-@upr.message(F.text == "Достопримечательности города")
-async def attractions(message: types.Message):
-    await message.answer(text="Тут можно что-то про достопримечательности: маршруты, что посмотреть, про экскурсии", reply_markup=attractions_kbd)
+    
