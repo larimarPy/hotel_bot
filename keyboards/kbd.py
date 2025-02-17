@@ -22,15 +22,26 @@ def setup_kbd(
 
 
 def setup_inline_kbd(
-        *btns: tuple[str, str],
-        placeholder: str = None,
-        sizes: tuple[int] = (2,)
-):
-    inline_keyboard = InlineKeyboardBuilder()
+    *,
+    btns: dict[str, str],
+    sizes: tuple[int] = (2,)):
 
-    for text, callback_data in enumerate(btns):
-        inline_keyboard.add(InlineKeyboardButton(text=text, callback_data=callback_data))
+    keyboard = InlineKeyboardBuilder()
 
-    return inline_keyboard.adjust(*sizes).as_markup()
+    for text, data in btns.items():
+        
+        keyboard.add(InlineKeyboardButton(text=text, callback_data=data))
+
+    return keyboard.adjust(*sizes).as_markup()
 
 
+    #     *,
+    #     btns: dict[str, str],
+    #     sizes: tuple[int] = (2,)):
+    
+    # inline_keyboard = InlineKeyboardBuilder()
+
+    # for text, callback_data in btns.items():
+    #     inline_keyboard.add(InlineKeyboardButton(text=text, callback_data=callback_data))
+
+    # return inline_keyboard.adjust(*sizes).as_markup()

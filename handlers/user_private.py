@@ -2,10 +2,19 @@ from aiogram import Router, types, F
 from aiogram.filters import CommandStart, Command, or_f, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from keyboards.kbd import setup_kbd
+from keyboards.kbd import setup_kbd, setup_inline_kbd
+from database import models
 
 upr = Router()
+
+
+async def orm_get_item(session: AsyncSession):
+    query = select(models.Vodka)
+    result = await session.execute(query)
+    return result.scalars().all()
 
 
 class MainMenu(StatesGroup):
@@ -87,7 +96,7 @@ async def bar_menu(message: types.Message, state: FSMContext):
     if message.text == "Алкоголь":
         await message.answer(text="Вот категории напитков:", reply_markup=setup_kbd(
             "Водка", "Виски", "Ром", "Коньяк", "Джин", "Текила", "Ликёры", "Коктейли",
-            "Вермут", "Пиво", "Найстойки", "Вина", "Назад", placeholder="Что заинтересовало?", sizes=(4, 4, 4, 1)
+            "Вермут", "Пиво", "Настойки", "Вина", "Назад", placeholder="Что заинтересовало?", sizes=(4, 4, 4, 1)
         ))
         await state.set_state(BarMenu.alcohol)
     if message.text == "Безалкогольные напитки":
@@ -96,7 +105,10 @@ async def bar_menu(message: types.Message, state: FSMContext):
         ))
         await state.set_state(BarMenu.alcoholfree)
 
-
+@upr.message(StateFilter(BarMenu.alcohol), F.text == "Водка")
+async def vodka(message: types.Message, state: FSMContext, session: AsyncSession):
+    for item in await orm_get_item(session):
+        await message.answer(text="vodka", reply_markup=setup_inline_kbd(btns={f"{item.name}": "some"}))
 
 
 #BACK BUTTON
@@ -127,5 +139,3 @@ async def back(message: types.Message, state: FSMContext):
             "Алкоголь", "Безалкогольные напитки", "Назад", placeholder="Выберите категорию", sizes=(2, 1)
         ))
         await state.set_state(RestorauntMenu.bar)
-
-    

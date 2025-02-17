@@ -7,9 +7,9 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from dotenv import find_dotenv, load_dotenv
 load_dotenv(find_dotenv())
 
-from middleware.db import DataBaseSession
+from middlewares.db import DataBaseSession
 
-from dao.database import create_db, drop_db, sessionmaker
+from database.engine import create_db, drop_db, sessionmaker
 
 from handlers.user_private import upr
 from common.commands import cmds
